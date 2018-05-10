@@ -91,14 +91,14 @@ public:
   virtual void enterParenthesis(AslParser::ParenthesisContext * /*ctx*/) override { }
   virtual void exitParenthesis(AslParser::ParenthesisContext * /*ctx*/) override { }
 
+  virtual void enterFuncID(AslParser::FuncIDContext * /*ctx*/) override { }
+  virtual void exitFuncID(AslParser::FuncIDContext * /*ctx*/) override { }
+
   virtual void enterSimpleID(AslParser::SimpleIDContext * /*ctx*/) override { }
   virtual void exitSimpleID(AslParser::SimpleIDContext * /*ctx*/) override { }
 
   virtual void enterArrayID(AslParser::ArrayIDContext * /*ctx*/) override { }
   virtual void exitArrayID(AslParser::ArrayIDContext * /*ctx*/) override { }
-
-  virtual void enterFuncID(AslParser::FuncIDContext * /*ctx*/) override { }
-  virtual void exitFuncID(AslParser::FuncIDContext * /*ctx*/) override { }
 
 
   virtual void enterEveryRule(antlr4::ParserRuleContext * /*ctx*/) override { }

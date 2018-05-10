@@ -224,7 +224,7 @@ public:
   public:
     ProcCallContext(StatementContext *ctx);
 
-    IdentContext *ident();
+    antlr4::tree::TerminalNode *ID();
     std::vector<ExprContext *> expr();
     ExprContext* expr(size_t i);
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -431,16 +431,6 @@ public:
    
   };
 
-  class  ArrayIDContext : public IdentContext {
-  public:
-    ArrayIDContext(IdentContext *ctx);
-
-    antlr4::tree::TerminalNode *ID();
-    ExprContext *expr();
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-  };
-
   class  FuncIDContext : public IdentContext {
   public:
     FuncIDContext(IdentContext *ctx);
@@ -448,6 +438,16 @@ public:
     antlr4::tree::TerminalNode *ID();
     std::vector<ExprContext *> expr();
     ExprContext* expr(size_t i);
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+  };
+
+  class  ArrayIDContext : public IdentContext {
+  public:
+    ArrayIDContext(IdentContext *ctx);
+
+    antlr4::tree::TerminalNode *ID();
+    ExprContext *expr();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
   };

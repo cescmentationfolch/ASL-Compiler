@@ -89,14 +89,14 @@ public:
   virtual void enterParenthesis(AslParser::ParenthesisContext *ctx) = 0;
   virtual void exitParenthesis(AslParser::ParenthesisContext *ctx) = 0;
 
+  virtual void enterFuncID(AslParser::FuncIDContext *ctx) = 0;
+  virtual void exitFuncID(AslParser::FuncIDContext *ctx) = 0;
+
   virtual void enterSimpleID(AslParser::SimpleIDContext *ctx) = 0;
   virtual void exitSimpleID(AslParser::SimpleIDContext *ctx) = 0;
 
   virtual void enterArrayID(AslParser::ArrayIDContext *ctx) = 0;
   virtual void exitArrayID(AslParser::ArrayIDContext *ctx) = 0;
-
-  virtual void enterFuncID(AslParser::FuncIDContext *ctx) = 0;
-  virtual void exitFuncID(AslParser::FuncIDContext *ctx) = 0;
 
 
 };

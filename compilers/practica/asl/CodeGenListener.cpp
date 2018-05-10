@@ -168,7 +168,7 @@ void CodeGenListener::enterProcCall(AslParser::ProcCallContext *ctx) {
 void CodeGenListener::exitProcCall(AslParser::ProcCallContext *ctx) {
   instructionList code;
   // std::string name = ctx->ident()->ID()->getSymbol()->getText();
-  std::string name = ctx->ident()->getText();
+  std::string name = ctx->ID()->getText();
   code = instruction::CALL(name);
   putCodeDecor(ctx, code);
   DEBUG_EXIT();
