@@ -100,7 +100,6 @@ void TypeCheckListener::exitParameters(AslParser::ParametersContext *ctx) {
 }
 
 void TypeCheckListener::enterReturnStmt(AslParser::ReturnStmtContext *ctx) {
-  if(false) std::cout << "hola";
   DEBUG_ENTER();
 }
 void TypeCheckListener::exitReturnStmt(AslParser::ReturnStmtContext *ctx) {
