@@ -38,7 +38,7 @@ program : function+ EOF
 
 // A function has a name, a list of parameters and a list of statements
 function
-        : FUNC ID '(' ((parameters (',' parameters)*) | ) ')' ((':' vartype declarations statements returnStmt)| (declarations statements)) ENDFUNC
+        : FUNC ID '(' ((parameters (',' parameters)*) | ) ')' ((':' vartype declarations statements* returnStmt)| (declarations statements*)) ENDFUNC
         ;
         
 parameters
@@ -67,7 +67,7 @@ type    : INT
         ;
 
 statements
-        : (statement | returnStmt)*
+        : (statement | returnStmt)
         ;
         
 returnStmt
@@ -78,9 +78,9 @@ statement
           // Assignment
         : left_expr ASSIGN expr ';'           # assignStmt
           // if-then-else statement (else is optional)
-        | IF expr THEN statements ENDIF       # ifStmt
+        | IF expr THEN statements* ENDIF       # ifStmt
           // A function/procedure call has a list of arguments in parenthesis (possibly empty)
-        | WHILE expr DO statements ENDWHILE      # whileStmt
+        | WHILE expr DO statements* ENDWHILE      # whileStmt
         
         | ID '(' (expr (',' expr)*)? ')' ';'  # procCall
           // Read a variable

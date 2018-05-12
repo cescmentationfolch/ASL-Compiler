@@ -154,8 +154,8 @@ void TypeCheckListener::enterAssignStmt(AslParser::AssignStmtContext *ctx) {
 void TypeCheckListener::exitAssignStmt(AslParser::AssignStmtContext *ctx) {
   TypesMgr::TypeId t1 = getTypeDecor(ctx->left_expr());
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
-  if(Types.isVoidTy(t2)){}
-    //Errors.incompatibleReturn(ctx->expr());
+  if(Types.isVoidTy(t2))
+    Errors.isNotFunction(ctx->expr());
   else if ((not Types.isErrorTy(t1)) and (not Types.isErrorTy(t2)) and
         (not Types.copyableTypes(t1, t2)))
         Errors.incompatibleAssignment(ctx->ASSIGN());
@@ -269,7 +269,11 @@ void TypeCheckListener::exitArithmetic(AslParser::ArithmeticContext *ctx) {
   if (((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1))) or
       ((not Types.isErrorTy(t2)) and (not Types.isNumericTy(t2))))
     Errors.incompatibleOperator(ctx->op);
-  TypesMgr::TypeId t = Types.createIntegerTy();
+  TypesMgr::TypeId t;
+  if(Types.isFloatTy(t1) or Types.isFloatTy(t2))
+    t = Types.createFloatTy();
+  else
+    t = Types.createIntegerTy();
   putTypeDecor(ctx, t);
   putIsLValueDecor(ctx, false);
   DEBUG_EXIT();
@@ -330,7 +334,7 @@ void TypeCheckListener::exitUnary(AslParser::UnaryContext *ctx) {
   else{
     if((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1)))
        Errors.incompatibleOperator(ctx->op);
-    TypesMgr::TypeId t = Types.createIntegerTy();
+    TypesMgr::TypeId t = t1;
     putTypeDecor(ctx, t);
   }
   putIsLValueDecor(ctx, false);

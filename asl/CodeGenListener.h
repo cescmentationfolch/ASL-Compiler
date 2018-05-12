@@ -64,7 +64,13 @@ public:
 
   void enterProgram(AslParser::ProgramContext *ctx);
   void exitProgram(AslParser::ProgramContext *ctx);
+  
+  void enterParameters(AslParser::ParametersContext *ctx);
+  void exitParameters(AslParser::ParametersContext *ctx);
 
+  void enterReturnStmt(AslParser::ReturnStmtContext *ctx);
+  void exitReturnStmt(AslParser::ReturnStmtContext *ctx);
+  
   void enterFunction(AslParser::FunctionContext *ctx);
   void exitFunction(AslParser::FunctionContext *ctx);
 
@@ -86,6 +92,9 @@ public:
   void enterAssignStmt(AslParser::AssignStmtContext *ctx);
   void exitAssignStmt(AslParser::AssignStmtContext *ctx);
 
+  void enterWhileStmt(AslParser::WhileStmtContext *ctx);
+  void exitWhileStmt(AslParser::WhileStmtContext *ctx);
+  
   void enterIfStmt(AslParser::IfStmtContext *ctx);
   void exitIfStmt(AslParser::IfStmtContext *ctx);
 
@@ -109,6 +118,15 @@ public:
 
   void enterRelational(AslParser::RelationalContext *ctx);
   void exitRelational(AslParser::RelationalContext *ctx);
+  
+  void enterLogicalOp(AslParser::LogicalOpContext *ctx);
+  void exitLogicalOp(AslParser::LogicalOpContext *ctx);
+
+  void enterUnary(AslParser::UnaryContext *ctx);
+  void exitUnary(AslParser::UnaryContext *ctx);
+
+  void enterParenthesis(AslParser::ParenthesisContext *ctx);
+  void exitParenthesis(AslParser::ParenthesisContext *ctx);
 
   void enterValue(AslParser::ValueContext *ctx);
   void exitValue(AslParser::ValueContext *ctx);
@@ -118,6 +136,15 @@ public:
 
   void enterIdent(AslParser::IdentContext *ctx);
   void exitIdent(AslParser::IdentContext *ctx);
+  
+  void enterSimpleID(AslParser::SimpleIDContext *ctx);
+  void exitSimpleID(AslParser::SimpleIDContext *ctx);
+  
+  void enterArrayID(AslParser::ArrayIDContext *ctx);
+  void exitArrayID(AslParser::ArrayIDContext *ctx);
+  
+  void enterFuncID(AslParser::FuncIDContext *ctx);
+  void exitFuncID(AslParser::FuncIDContext *ctx);
 
   // void enterEveryRule(antlr4::ParserRuleContext *ctx);
   // void exitEveryRule(antlr4::ParserRuleContext *ctx);
