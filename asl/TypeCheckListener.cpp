@@ -107,7 +107,11 @@ void TypeCheckListener::exitReturnStmt(AslParser::ReturnStmtContext *ctx) {
   putTypeDecor(ctx, t);
   putIsLValueDecor(ctx, false);
   TypesMgr::TypeId t2 = Symbols.getCurrentFunctionTy();
-  if(not Types.copyableTypes(t, t2)){
+  t2 = Types.getFuncReturnType(t2);
+  if(not Types.copyableTypes(t2, t)){
+    if(ctx->expr())
+      Errors.incompatibleReturn(ctx->expr());  
+    else
       Errors.incompatibleReturn(ctx);    
   }
   
@@ -150,7 +154,9 @@ void TypeCheckListener::enterAssignStmt(AslParser::AssignStmtContext *ctx) {
 void TypeCheckListener::exitAssignStmt(AslParser::AssignStmtContext *ctx) {
   TypesMgr::TypeId t1 = getTypeDecor(ctx->left_expr());
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
-  if ((not Types.isErrorTy(t1)) and (not Types.isErrorTy(t2)) and
+  if(Types.isVoidTy(t2)){}
+    //Errors.incompatibleReturn(ctx->expr());
+  else if ((not Types.isErrorTy(t1)) and (not Types.isErrorTy(t2)) and
         (not Types.copyableTypes(t1, t2)))
         Errors.incompatibleAssignment(ctx->ASSIGN());
     
@@ -189,9 +195,27 @@ void TypeCheckListener::exitProcCall(AslParser::ProcCallContext *ctx) {
   if (Symbols.findInStack(ident) == -1) {
     Errors.undeclaredIdent(ctx->ID());
   }
-  else if (not Symbols.isFunctionClass(ident)) {
-    Errors.isNotCallable(ctx);
+  else{
+    if (not Symbols.isFunctionClass(ident)) {
+      Errors.isNotCallable(ctx);
+    }
+    else{
+      TypesMgr::TypeId ft = Symbols.getType(ident);
+      const std::vector<TypesMgr::TypeId> paramtypes = Types.getFuncParamsTypes(ft);
+      if(ctx->expr().size() != Types.getNumOfParameters(ft))
+        Errors.numberOfParameters(ctx);
+      else
+        for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+          TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(i));
+//           Types.dump(paramtypes[i]);
+//           Types.dump(t1);
+          if(not Types.copyableTypes(t1, paramtypes[i]))
+            Errors.incompatibleParameter(ctx->expr(i), i+1, ctx);
+        }
+    }
   }
+  
+  
   DEBUG_EXIT();
 }
 
@@ -367,8 +391,6 @@ void TypeCheckListener::exitSimpleID(AslParser::SimpleIDContext *ctx){
       
     if(Symbols.isFunctionClass(ident)){
         putIsLValueDecor(ctx, false);
-       // t1 = Types.getFuncReturnType(t1);
-        //Errors.isNotCallable(ctx);
         putTypeDecor(ctx, t1);
     }
     else{
@@ -421,16 +443,24 @@ void TypeCheckListener::exitFuncID(AslParser::FuncIDContext *ctx){
     putIsLValueDecor(ctx, false);
   }
   else {
-    TypesMgr::TypeId t1 = Symbols.getType(ident);
+    TypesMgr::TypeId ft = Symbols.getType(ident);
     if(Symbols.isFunctionClass(ident)){
-      t1 = Types.getFuncReturnType(t1);
+      const std::vector<TypesMgr::TypeId> paramtypes = Types.getFuncParamsTypes(ft);
+      if(ctx->expr().size() != Types.getNumOfParameters(ft))
+        Errors.numberOfParameters(ctx);
+      else
+        for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+          TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(i));
+          if(not Types.copyableTypes(t1, paramtypes[i]))
+            Errors.incompatibleParameter(ctx->expr(i), i+1, ctx);
+        }
+      ft = Types.getFuncReturnType(ft);
     }
     else{
-          //ERROOOOOOR
       Errors.isNotCallable(ctx);
     }
     
-    putTypeDecor(ctx, t1);
+    putTypeDecor(ctx, ft);
     putIsLValueDecor(ctx, false); 
   }
   DEBUG_EXIT();
