@@ -59,6 +59,7 @@ SymbolsListener::SymbolsListener(TypesMgr       & Types,
   Decorations{Decorations},
   Errors{Errors} {
 }
+//
 
 void SymbolsListener::enterProgram(AslParser::ProgramContext *ctx) {
   DEBUG_ENTER();
