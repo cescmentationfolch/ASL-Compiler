@@ -24,8 +24,8 @@ public:
 
   enum {
     RuleProgram = 0, RuleFunction = 1, RuleParameters = 2, RuleDeclarations = 3, 
-    RuleVartype = 4, RuleReturnStmt = 5, RuleVariable_decl = 6, RuleArray = 7, 
-    RuleType = 8, RuleStatements = 9, RuleStatement = 10, RuleLeft_expr = 11, 
+    RuleVartype = 4, RuleVariable_decl = 5, RuleArray = 6, RuleType = 7, 
+    RuleStatements = 8, RuleReturnStmt = 9, RuleStatement = 10, RuleLeft_expr = 11, 
     RuleExpr = 12, RuleIdent = 13
   };
 
@@ -44,11 +44,11 @@ public:
   class ParametersContext;
   class DeclarationsContext;
   class VartypeContext;
-  class ReturnStmtContext;
   class Variable_declContext;
   class ArrayContext;
   class TypeContext;
   class StatementsContext;
+  class ReturnStmtContext;
   class StatementContext;
   class Left_exprContext;
   class ExprContext;
@@ -75,13 +75,13 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *FUNC();
     antlr4::tree::TerminalNode *ID();
-    DeclarationsContext *declarations();
-    StatementsContext *statements();
-    ReturnStmtContext *returnStmt();
     antlr4::tree::TerminalNode *ENDFUNC();
     std::vector<ParametersContext *> parameters();
     ParametersContext* parameters(size_t i);
     VartypeContext *vartype();
+    DeclarationsContext *declarations();
+    StatementsContext *statements();
+    ReturnStmtContext *returnStmt();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -131,20 +131,6 @@ public:
   };
 
   VartypeContext* vartype();
-
-  class  ReturnStmtContext : public antlr4::ParserRuleContext {
-  public:
-    ReturnStmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *RETURN();
-    ExprContext *expr();
-
-    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
-    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
-   
-  };
-
-  ReturnStmtContext* returnStmt();
 
   class  Variable_declContext : public antlr4::ParserRuleContext {
   public:
@@ -199,6 +185,8 @@ public:
     virtual size_t getRuleIndex() const override;
     std::vector<StatementContext *> statement();
     StatementContext* statement(size_t i);
+    std::vector<ReturnStmtContext *> returnStmt();
+    ReturnStmtContext* returnStmt(size_t i);
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -206,6 +194,20 @@ public:
   };
 
   StatementsContext* statements();
+
+  class  ReturnStmtContext : public antlr4::ParserRuleContext {
+  public:
+    ReturnStmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *RETURN();
+    ExprContext *expr();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  ReturnStmtContext* returnStmt();
 
   class  StatementContext : public antlr4::ParserRuleContext {
   public:

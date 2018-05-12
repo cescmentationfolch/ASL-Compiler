@@ -38,7 +38,7 @@ program : function+ EOF
 
 // A function has a name, a list of parameters and a list of statements
 function
-        : FUNC ID '(' ((parameters (',' parameters)*) | ) ')' ((':' vartype) | ) declarations statements returnStmt ENDFUNC
+        : FUNC ID '(' ((parameters (',' parameters)*) | ) ')' ((':' vartype declarations statements returnStmt)| (declarations statements)) ENDFUNC
         ;
         
 parameters
@@ -51,10 +51,7 @@ declarations
         
 vartype : (type|array) ;
 
-returnStmt
-        : RETURN expr? ';'
-        |
-        ;
+
 
 variable_decl
         : VAR ID (',' ID)* ':' vartype
@@ -70,9 +67,12 @@ type    : INT
         ;
 
 statements
-        : (statement)*
+        : (statement | returnStmt)*
         ;
-
+        
+returnStmt
+        : RETURN expr? ';'
+        ;
 // The different types of instructions
 statement
           // Assignment

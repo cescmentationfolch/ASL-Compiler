@@ -76,9 +76,9 @@ void CodeGenListener::enterFunction(AslParser::FunctionContext *ctx) {
 }
 void CodeGenListener::exitFunction(AslParser::FunctionContext *ctx) {
   subroutine & subrRef = Code.get_last_subroutine();
-  instructionList code = getCodeDecor(ctx->statements());
-  code = code || instruction::RETURN();
-  subrRef.set_instructions(code);
+//   instructionList code = getCodeDecor(ctx->statements());
+//   code = code || instruction::RETURN();
+//   subrRef.set_instructions(code);
   Symbols.popScope();
   DEBUG_EXIT();
 }

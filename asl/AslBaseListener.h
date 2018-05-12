@@ -31,9 +31,6 @@ public:
   virtual void enterVartype(AslParser::VartypeContext * /*ctx*/) override { }
   virtual void exitVartype(AslParser::VartypeContext * /*ctx*/) override { }
 
-  virtual void enterReturnStmt(AslParser::ReturnStmtContext * /*ctx*/) override { }
-  virtual void exitReturnStmt(AslParser::ReturnStmtContext * /*ctx*/) override { }
-
   virtual void enterVariable_decl(AslParser::Variable_declContext * /*ctx*/) override { }
   virtual void exitVariable_decl(AslParser::Variable_declContext * /*ctx*/) override { }
 
@@ -45,6 +42,9 @@ public:
 
   virtual void enterStatements(AslParser::StatementsContext * /*ctx*/) override { }
   virtual void exitStatements(AslParser::StatementsContext * /*ctx*/) override { }
+
+  virtual void enterReturnStmt(AslParser::ReturnStmtContext * /*ctx*/) override { }
+  virtual void exitReturnStmt(AslParser::ReturnStmtContext * /*ctx*/) override { }
 
   virtual void enterAssignStmt(AslParser::AssignStmtContext * /*ctx*/) override { }
   virtual void exitAssignStmt(AslParser::AssignStmtContext * /*ctx*/) override { }

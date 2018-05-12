@@ -78,14 +78,10 @@ void TypeCheckListener::enterFunction(AslParser::FunctionContext *ctx) {
 }
 void TypeCheckListener::exitFunction(AslParser::FunctionContext *ctx) {
   Symbols.popScope();
-  TypesMgr::TypeId t1 = getTypeDecor(ctx->returnStmt());
   std::string ident = ctx->ID()->getText();
   TypesMgr::TypeId t2 = Symbols.getType(ident);
   if(Types.isFunctionTy(t2))
     t2 = Types.getFuncReturnType(t2);
-  if(not Types.copyableTypes(t1, t2)){
-    Errors.incompatibleReturn(ctx->returnStmt());    
-  }
   //
   DEBUG_EXIT();
 }
@@ -110,6 +106,11 @@ void TypeCheckListener::exitReturnStmt(AslParser::ReturnStmtContext *ctx) {
     t = Types.createVoidTy(); 
   putTypeDecor(ctx, t);
   putIsLValueDecor(ctx, false);
+  TypesMgr::TypeId t2 = Symbols.getCurrentFunctionTy();
+  if(not Types.copyableTypes(t, t2)){
+      Errors.incompatibleReturn(ctx);    
+  }
+  
   //std::cout << Types.to_string(t) << std::endl;
   DEBUG_EXIT();
 }
@@ -337,6 +338,8 @@ void TypeCheckListener::enterExprIdent(AslParser::ExprIdentContext *ctx) {
 }
 void TypeCheckListener::exitExprIdent(AslParser::ExprIdentContext *ctx) {
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
+//   if(Types.isVoidTy(t1))
+//       Errors.incompatibleAssignment(ctx->ident());
   putTypeDecor(ctx, t1);
   bool b = getIsLValueDecor(ctx->ident());
   putIsLValueDecor(ctx, b);
@@ -365,6 +368,7 @@ void TypeCheckListener::exitSimpleID(AslParser::SimpleIDContext *ctx){
     if(Symbols.isFunctionClass(ident)){
         putIsLValueDecor(ctx, false);
        // t1 = Types.getFuncReturnType(t1);
+        //Errors.isNotCallable(ctx);
         putTypeDecor(ctx, t1);
     }
     else{
@@ -388,14 +392,16 @@ void TypeCheckListener::exitArrayID(AslParser::ArrayIDContext *ctx){
   }
   else {
     TypesMgr::TypeId t1 = Symbols.getType(ident);
-    if(not Types.isArrayTy(t1))
+    TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
+    if(not Types.isArrayTy(t1)){
       Errors.nonArrayInArrayAccess(ctx);
+      t1 = Types.createErrorTy();
+    }
     else 
       t1 = Types.getArrayElemType(t1);
     
-    TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
     if(not Types.isIntegerTy(t2))
-      Errors.nonIntegerIndexInArrayAccess(ctx);
+      Errors.nonIntegerIndexInArrayAccess(ctx->expr());
    
     putTypeDecor(ctx, t1);
     putIsLValueDecor(ctx, true);
@@ -421,6 +427,7 @@ void TypeCheckListener::exitFuncID(AslParser::FuncIDContext *ctx){
     }
     else{
           //ERROOOOOOR
+      Errors.isNotCallable(ctx);
     }
     
     putTypeDecor(ctx, t1);
