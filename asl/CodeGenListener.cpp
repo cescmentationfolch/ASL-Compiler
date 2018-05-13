@@ -83,7 +83,11 @@ void CodeGenListener::exitFunction(AslParser::FunctionContext *ctx) {
     subrRef.add_param(ctx->parameters(i)->ID()->getText());
   for(unsigned int i = 0; i < ctx->statements().size(); ++i)
     code = code || getCodeDecor(ctx->statements(i));
-  code = code || instruction::RETURN();
+  
+  if(ctx->returnStmt())
+    code = code || getCodeDecor(ctx->returnStmt());
+  else
+    code = code || instruction::RETURN();
   subrRef.set_instructions(code);
   Symbols.popScope();
   DEBUG_EXIT();
@@ -109,13 +113,13 @@ void CodeGenListener::exitReturnStmt(AslParser::ReturnStmtContext *ctx){
     std::string     addr = getAddrDecor(ctx->expr());
     TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
     if(Types.isIntegerTy(t1))
-      code = code || instruction::ILOAD("_return", addr);
+      code = code || instruction::ILOAD("_result", addr);
     else if(Types.isCharacterTy(t1))
-      code = code || instruction::CHLOAD("_return", addr);
+      code = code || instruction::CHLOAD("_result", addr);
     else if(Types.isFloatTy(t1))
-      code = code || instruction::FLOAD("_return", addr);
+      code = code || instruction::FLOAD("_result", addr);
     else if(Types.isBooleanTy(t1))
-      code = code || instruction::ILOAD("_return", addr);
+      code = code || instruction::ILOAD("_result", addr);
   }
   code = code || instruction::RETURN();
   putCodeDecor(ctx, code);
@@ -203,7 +207,6 @@ void CodeGenListener::exitWhileStmt(AslParser::WhileStmtContext *ctx){
   code = instruction::LABEL(labelStartWhile) || code1 || instruction::FJUMP(addr1, labelEndWhile) || code2 || instruction::UJUMP(labelStartWhile)|| instruction::LABEL(labelEndWhile);
   putCodeDecor(ctx, code);
   DEBUG_EXIT();
-  DEBUG_EXIT();
 }
 
 void CodeGenListener::enterIfStmt(AslParser::IfStmtContext *ctx) {
@@ -235,7 +238,7 @@ void CodeGenListener::exitProcCall(AslParser::ProcCallContext *ctx) {
   for(unsigned int i = 0; i < ctx->expr().size(); ++i){
     code = code || getCodeDecor(ctx->expr(i));
   }
-  if(Types.isVoidFunction(t))
+  if(not Types.isVoidFunction(t))
     code = code || instruction::PUSH();
   for(unsigned int i = 0; i < ctx->expr().size(); ++i){
     std::string addr = getAddrDecor(ctx->expr(i));
@@ -246,9 +249,9 @@ void CodeGenListener::exitProcCall(AslParser::ProcCallContext *ctx) {
     std::string addr = getAddrDecor(ctx->expr(i));
     code = code || instruction::POP();
   }
-  if(Types.isVoidFunction(t)){
+  if(not Types.isVoidFunction(t)){
     std::string temp = "%"+codeCounters.newTEMP();
-    code = code || instruction::PUSH(temp);
+    code = code || instruction::POP(temp);
     putAddrDecor(ctx, temp);
   }
   putCodeDecor(ctx, code);
@@ -603,6 +606,11 @@ void CodeGenListener::enterArrayID(AslParser::ArrayIDContext *ctx){
   DEBUG_ENTER();
 }
 void CodeGenListener::exitArrayID(AslParser::ArrayIDContext *ctx){
+  std::string     addrexpr = getAddrDecor(ctx->expr());
+  instructionList code = getCodeDecor(ctx->expr());
+  putAddrDecor(ctx, ctx->ID()->getText()+"["+addrexpr+"]");
+  putOffsetDecor(ctx, "");
+  putCodeDecor(ctx, code);
   DEBUG_EXIT();
 }
   
@@ -610,6 +618,28 @@ void CodeGenListener::enterFuncID(AslParser::FuncIDContext *ctx){
   DEBUG_ENTER();
 }
 void CodeGenListener::exitFuncID(AslParser::FuncIDContext *ctx){
+  instructionList code;
+  // std::string name = ctx->ident()->ID()->getSymbol()->getText();
+  std::string name = ctx->ID()->getText();
+  for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+    code = code || getCodeDecor(ctx->expr(i));
+  }
+  code = code || instruction::PUSH();
+  for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+    std::string addr = getAddrDecor(ctx->expr(i));
+    code = code || instruction::PUSH(addr);
+  }
+  
+  code = code || instruction::CALL(name);
+  
+  for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+    std::string addr = getAddrDecor(ctx->expr(i));
+    code = code || instruction::POP();
+  }
+  std::string temp = "%"+codeCounters.newTEMP();
+  code = code || instruction::POP(temp);
+  putAddrDecor(ctx, temp);
+  putCodeDecor(ctx, code);
   DEBUG_EXIT();
 }
 

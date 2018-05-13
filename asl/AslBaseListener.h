@@ -67,6 +67,9 @@ public:
   virtual void enterWriteString(AslParser::WriteStringContext * /*ctx*/) override { }
   virtual void exitWriteString(AslParser::WriteStringContext * /*ctx*/) override { }
 
+  virtual void enterEls(AslParser::ElsContext * /*ctx*/) override { }
+  virtual void exitEls(AslParser::ElsContext * /*ctx*/) override { }
+
   virtual void enterLeft_expr(AslParser::Left_exprContext * /*ctx*/) override { }
   virtual void exitLeft_expr(AslParser::Left_exprContext * /*ctx*/) override { }
 

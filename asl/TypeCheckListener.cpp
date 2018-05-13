@@ -209,7 +209,7 @@ void TypeCheckListener::exitProcCall(AslParser::ProcCallContext *ctx) {
           TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(i));
 //           Types.dump(paramtypes[i]);
 //           Types.dump(t1);
-          if(not Types.copyableTypes(t1, paramtypes[i]))
+          if(not Types.copyableTypes(paramtypes[i],t1))
             Errors.incompatibleParameter(ctx->expr(i), i+1, ctx);
         }
     }
@@ -455,7 +455,7 @@ void TypeCheckListener::exitFuncID(AslParser::FuncIDContext *ctx){
       else
         for(unsigned int i = 0; i < ctx->expr().size(); ++i){
           TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(i));
-          if(not Types.copyableTypes(t1, paramtypes[i]))
+          if(not Types.copyableTypes(paramtypes[i],t1))
             Errors.incompatibleParameter(ctx->expr(i), i+1, ctx);
         }
       ft = Types.getFuncReturnType(ft);

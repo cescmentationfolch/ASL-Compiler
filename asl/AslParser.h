@@ -25,8 +25,8 @@ public:
   enum {
     RuleProgram = 0, RuleFunction = 1, RuleParameters = 2, RuleDeclarations = 3, 
     RuleVartype = 4, RuleVariable_decl = 5, RuleArray = 6, RuleType = 7, 
-    RuleStatements = 8, RuleReturnStmt = 9, RuleStatement = 10, RuleLeft_expr = 11, 
-    RuleExpr = 12, RuleIdent = 13
+    RuleStatements = 8, RuleReturnStmt = 9, RuleStatement = 10, RuleEls = 11, 
+    RuleLeft_expr = 12, RuleExpr = 13, RuleIdent = 14
   };
 
   AslParser(antlr4::TokenStream *input);
@@ -50,6 +50,7 @@ public:
   class StatementsContext;
   class ReturnStmtContext;
   class StatementContext;
+  class ElsContext;
   class Left_exprContext;
   class ExprContext;
   class IdentContext; 
@@ -266,6 +267,7 @@ public:
     antlr4::tree::TerminalNode *ENDIF();
     std::vector<StatementsContext *> statements();
     StatementsContext* statements(size_t i);
+    ElsContext *els();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
   };
@@ -302,6 +304,21 @@ public:
   };
 
   StatementContext* statement();
+
+  class  ElsContext : public antlr4::ParserRuleContext {
+  public:
+    ElsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ELSE();
+    std::vector<StatementsContext *> statements();
+    StatementsContext* statements(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  ElsContext* els();
 
   class  Left_exprContext : public antlr4::ParserRuleContext {
   public:

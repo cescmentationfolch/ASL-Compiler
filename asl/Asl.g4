@@ -78,7 +78,7 @@ statement
           // Assignment
         : left_expr ASSIGN expr ';'           # assignStmt
           // if-then-else statement (else is optional)
-        | IF expr THEN statements* ENDIF       # ifStmt
+        | IF expr THEN statements* els? ENDIF       # ifStmt
           // A function/procedure call has a list of arguments in parenthesis (possibly empty)
         | WHILE expr DO statements* ENDWHILE      # whileStmt
         
@@ -90,6 +90,9 @@ statement
           // Write a string
         | WRITE STRING ';'                    # writeString
         ;
+        
+els: ELSE statements* ;
+
 // Grammar for left expressions (l-values in C++)
 left_expr
         : ident
