@@ -77,6 +77,10 @@ void CodeGenListener::enterFunction(AslParser::FunctionContext *ctx) {
 void CodeGenListener::exitFunction(AslParser::FunctionContext *ctx) {
   subroutine & subrRef = Code.get_last_subroutine();
   instructionList  code;
+  if(ctx->vartype())
+    subrRef.add_param("_result");
+  for(unsigned int i = 0; i < ctx->parameters().size(); ++i)
+    subrRef.add_param(ctx->parameters(i)->ID()->getText());
   for(unsigned int i = 0; i < ctx->statements().size(); ++i)
     code = code || getCodeDecor(ctx->statements(i));
   code = code || instruction::RETURN();
@@ -90,10 +94,6 @@ void CodeGenListener::enterParameters(AslParser::ParametersContext *ctx){
   
 }
 void CodeGenListener::exitParameters(AslParser::ParametersContext *ctx){
-  subroutine       & subrRef = Code.get_last_subroutine();
-  TypesMgr::TypeId        t1 = getTypeDecor(ctx->vartype());
-  //std::size_t           size = Types.getSizeOfType(t1);
-  subrRef.add_param(ctx->ID()->getText());
   DEBUG_EXIT();
 }
 
@@ -104,6 +104,19 @@ void CodeGenListener::enterReturnStmt(AslParser::ReturnStmtContext *ctx){
 void CodeGenListener::exitReturnStmt(AslParser::ReturnStmtContext *ctx){
   //subroutine & subrRef = Code.get_last_subroutine();
   instructionList code;
+  if(ctx->expr()){
+    code = code || getCodeDecor(ctx->expr());
+    std::string     addr = getAddrDecor(ctx->expr());
+    TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
+    if(Types.isIntegerTy(t1))
+      code = code || instruction::ILOAD("_return", addr);
+    else if(Types.isCharacterTy(t1))
+      code = code || instruction::CHLOAD("_return", addr);
+    else if(Types.isFloatTy(t1))
+      code = code || instruction::FLOAD("_return", addr);
+    else if(Types.isBooleanTy(t1))
+      code = code || instruction::ILOAD("_return", addr);
+  }
   code = code || instruction::RETURN();
   putCodeDecor(ctx, code);
   DEBUG_EXIT();
@@ -218,7 +231,26 @@ void CodeGenListener::exitProcCall(AslParser::ProcCallContext *ctx) {
   instructionList code;
   // std::string name = ctx->ident()->ID()->getSymbol()->getText();
   std::string name = ctx->ID()->getText();
-  code = instruction::CALL(name);
+  TypesMgr::TypeId t = Symbols.getType(name);
+  for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+    code = code || getCodeDecor(ctx->expr(i));
+  }
+  if(Types.isVoidFunction(t))
+    code = code || instruction::PUSH();
+  for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+    std::string addr = getAddrDecor(ctx->expr(i));
+    code = code || instruction::PUSH(addr);
+  }
+  code = code || instruction::CALL(name);
+  for(unsigned int i = 0; i < ctx->expr().size(); ++i){
+    std::string addr = getAddrDecor(ctx->expr(i));
+    code = code || instruction::POP();
+  }
+  if(Types.isVoidFunction(t)){
+    std::string temp = "%"+codeCounters.newTEMP();
+    code = code || instruction::PUSH(temp);
+    putAddrDecor(ctx, temp);
+  }
   putCodeDecor(ctx, code);
   DEBUG_EXIT();
 }

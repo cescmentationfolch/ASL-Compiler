@@ -1,5 +1,6 @@
 function mul
   params
+    _result
     a
     b
   endparams
