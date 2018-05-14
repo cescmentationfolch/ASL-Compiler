@@ -79,8 +79,10 @@ void CodeGenListener::exitFunction(AslParser::FunctionContext *ctx) {
   instructionList  code;
   if(ctx->vartype())
     subrRef.add_param("_result");
-  for(unsigned int i = 0; i < ctx->parameters().size(); ++i)
-    subrRef.add_param(ctx->parameters(i)->ID()->getText());
+  for(unsigned int i = 0; i < ctx->parameters().size(); ++i){
+    std::string param = ctx->parameters(i)->ID()->getText();
+    subrRef.add_param(param);
+  }
   for(unsigned int i = 0; i < ctx->statements().size(); ++i)
     code = code || getCodeDecor(ctx->statements(i));
   
@@ -182,7 +184,7 @@ void CodeGenListener::exitAssignStmt(AslParser::AssignStmtContext *ctx) {
   std::string     addr1 = getAddrDecor(ctx->left_expr());
   std::string     offs1 = getOffsetDecor(ctx->left_expr());
   instructionList code1 = getCodeDecor(ctx->left_expr());
-  TypesMgr::TypeId tid1 = getTypeDecor(ctx->left_expr());
+  //TypesMgr::TypeId tid1 = getTypeDecor(ctx->left_expr());
   std::string     addr2 = getAddrDecor(ctx->expr());
   std::string     offs2 = getOffsetDecor(ctx->expr());
   instructionList code2 = getCodeDecor(ctx->expr());
@@ -190,10 +192,25 @@ void CodeGenListener::exitAssignStmt(AslParser::AssignStmtContext *ctx) {
   code = code1 || code2;
   TypesMgr::TypeId t1 = Symbols.getType(addr1);
   TypesMgr::TypeId t2 = Symbols.getType(addr2);
-  if(Types.isArrayTy(t1))
-    code = code || instruction::XLOAD(addr1, offs1, addr2);
-  else if(Types.isArrayTy(t2))
-    code = code || instruction::LOADX(addr1, addr2, offs1);
+  if(Types.isArrayTy(t1) and Types.isArrayTy(t2)){
+    std::string temp = "%"+codeCounters.newTEMP();
+    std::string ref1 = "%"+codeCounters.newTEMP();
+    std::string ref2 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref1, addr1);
+    code = code || instruction::LOAD(ref2, addr2);
+    code = code || instruction::LOADX(temp, ref2, offs2);
+    code = code || instruction::XLOAD(ref1, offs1, temp);
+  }
+  else if(Types.isArrayTy(t1)){
+    std::string ref1 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref1, addr1);
+    code = code || instruction::XLOAD(ref1, offs1, addr2);
+  }
+  else if(Types.isArrayTy(t2)){
+    std::string ref2 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref2, addr2);
+    code = code || instruction::LOADX(addr1, ref2, offs2);
+  }
   else
     code = code || instruction::LOAD(addr1, addr2);
   putCodeDecor(ctx, code);
@@ -273,7 +290,12 @@ void CodeGenListener::exitProcCall(AslParser::ProcCallContext *ctx) {
   for(unsigned int i = 0; i < ctx->expr().size(); ++i){
     std::string addr = getAddrDecor(ctx->expr(i));
     TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(i));
-    if(Types.isFloatTy(paramtypes[i]) and Types.isIntegerTy(t1)){
+    if(Types.isArrayTy(t1)){
+      std::string reference = "%"+codeCounters.newTEMP();
+      code = code || instruction::ALOAD(reference,addr);
+      code = code || instruction::PUSH(reference);
+    }
+    else if(Types.isFloatTy(paramtypes[i]) and Types.isIntegerTy(t1)){
       std::string cast = "%"+codeCounters.newTEMP();
       code = code || instruction::FLOAT(cast, addr);
       code = code || instruction::PUSH(cast);
@@ -299,12 +321,40 @@ void CodeGenListener::enterReadStmt(AslParser::ReadStmtContext *ctx) {
   DEBUG_ENTER();
 }
 void CodeGenListener::exitReadStmt(AslParser::ReadStmtContext *ctx) {
-  instructionList  code;
+  instructionList code;
   std::string     addr1 = getAddrDecor(ctx->left_expr());
-  // std::string     offs1 = getOffsetDecor(ctx->left_expr());
+  // std::string     offs1 = getOffsetDecor(ctx->expr());
   instructionList code1 = getCodeDecor(ctx->left_expr());
-  // TypesMgr::TypeId tid1 = getTypeDecor(ctx->left_expr());
-  code = code1 || instruction::READI(addr1);
+  TypesMgr::TypeId tid1 = getTypeDecor(ctx->left_expr());
+  TypesMgr::TypeId ty1 = Symbols.getType(addr1);
+  if(Types.isArrayTy(ty1)){
+    std::string temp = "%"+codeCounters.newTEMP();
+    std::string offs1 = getOffsetDecor(ctx->left_expr());
+    if(Types.isFloatTy(tid1)){
+      code = code1 || code || instruction::READF(temp);
+    }
+    else if(Types.isCharacterTy(tid1)){
+      code = code1 || code || instruction::READC(temp);
+    }
+    else{
+      code = code1 || code || instruction::READI(temp);
+    }
+    std::string ref1 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref1, addr1);
+    code = code || instruction::XLOAD(ref1, offs1, temp);
+  }
+  else{
+    if(Types.isFloatTy(tid1)){
+      code = code1 || code || instruction::READF(addr1);
+    }
+    else if(Types.isCharacterTy(tid1)){
+      code = code1 || code || instruction::READC(addr1);
+    }
+    else{
+      code = code1 || code || instruction::READI(addr1);
+    }
+    
+  }
   putCodeDecor(ctx, code);
   DEBUG_EXIT();
 }
@@ -322,7 +372,9 @@ void CodeGenListener::exitWriteExpr(AslParser::WriteExprContext *ctx) {
   if(Types.isArrayTy(ty1)){
     std::string temporal = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->expr());
-    code = code || instruction::LOADX(temporal, addr1, offs1);
+    std::string ref1 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref1, addr1);
+    code = code || instruction::LOADX(temporal, ref1, offs1);
     addr1 = temporal;
   }
   if(Types.isFloatTy(tid1))
@@ -404,13 +456,17 @@ void CodeGenListener::exitArithmetic(AslParser::ArithmeticContext *ctx) {
   if(Types.isArrayTy(ty1)){
     std::string temporal1 = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->expr(0));
-    code = code || instruction::LOADX(temporal1, temp1, offs1);
+    std::string ref1 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref1, temp1);
+    code = code || instruction::LOADX(temporal1, ref1, offs1);
     temp1 = temporal1;
   }
   if(Types.isArrayTy(ty2)){
     std::string temporal2 = "%"+codeCounters.newTEMP();
     std::string offs2 = getOffsetDecor(ctx->expr(1));
-    code = code || instruction::LOADX(temporal2, temp2, offs2);
+    std::string ref2 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref2, temp2);
+    code = code || instruction::LOADX(temporal2, ref2, offs2);
     temp2 = temporal2;
   }
   
@@ -516,13 +572,17 @@ void CodeGenListener::exitRelational(AslParser::RelationalContext *ctx) {
   if(Types.isArrayTy(ty1)){
     std::string temporal1 = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->expr(0));
-    code = code || instruction::LOADX(temporal1, temp1, offs1);
+    std::string ref1 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref1, temp1);
+    code = code || instruction::LOADX(temporal1, ref1, offs1);
     temp1 = temporal1;
   }
   if(Types.isArrayTy(ty2)){
     std::string temporal2 = "%"+codeCounters.newTEMP();
     std::string offs2 = getOffsetDecor(ctx->expr(1));
-    code = code || instruction::LOADX(temporal2, temp2, offs2);
+    std::string ref2 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref2, temp2);
+    code = code || instruction::LOADX(temporal2, ref2, offs2);
     temp2 = temporal2;
   }
   
@@ -603,12 +663,38 @@ void CodeGenListener::enterLogicalOp(AslParser::LogicalOpContext *ctx){
   DEBUG_ENTER();
 }
 void CodeGenListener::exitLogicalOp(AslParser::LogicalOpContext *ctx){
-  std::string     addr1 = getAddrDecor(ctx->expr(0));
+  std::string     temp1 = getAddrDecor(ctx->expr(0));
   instructionList code1 = getCodeDecor(ctx->expr(0));
-  std::string     addr2 = getAddrDecor(ctx->expr(1));
+  std::string     temp2 = getAddrDecor(ctx->expr(1));
   instructionList code2 = getCodeDecor(ctx->expr(1));
   instructionList code  = code1 || code2;
-    
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(0));
+  TypesMgr::TypeId t2 = getTypeDecor(ctx->expr(1));
+
+  TypesMgr::TypeId ty1 = Symbols.getType(temp1);
+  TypesMgr::TypeId ty2 = Symbols.getType(temp2);
+  
+  
+  if(Types.isArrayTy(ty1)){
+    std::string temporal1 = "%"+codeCounters.newTEMP();
+    std::string offs1 = getOffsetDecor(ctx->expr(0));
+    std::string ref1 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref1, temp1);
+    code = code || instruction::LOADX(temporal1, ref1, offs1);
+    temp1 = temporal1;
+  }
+  if(Types.isArrayTy(ty2)){
+    std::string temporal2 = "%"+codeCounters.newTEMP();
+    std::string offs2 = getOffsetDecor(ctx->expr(1));
+    std::string ref2 = "%"+codeCounters.newTEMP();
+    code = code || instruction::LOAD(ref2, temp2);
+    code = code || instruction::LOADX(temporal2, ref2, offs2);
+    temp2 = temporal2;
+  }
+  
+  std::string addr1 = temp1;
+  std::string addr2 = temp2; 
+  
   std::string temp = "%"+codeCounters.newTEMP();
   if(ctx->OR())
     code = code || instruction::OR(temp, addr1, addr2);
@@ -628,7 +714,7 @@ void CodeGenListener::exitParenthesis(AslParser::ParenthesisContext *ctx){
   std::string     addr1 = getAddrDecor(ctx->expr());
   instructionList code = getCodeDecor(ctx->expr());
   putAddrDecor(ctx, addr1);
-  putOffsetDecor(ctx, "");
+  putOffsetDecor(ctx, getOffsetDecor(ctx->expr()));
   putCodeDecor(ctx, code);
   DEBUG_EXIT();
 }
@@ -687,7 +773,16 @@ void CodeGenListener::exitSimpleID(AslParser::SimpleIDContext *ctx){
 void CodeGenListener::enterArrayID(AslParser::ArrayIDContext *ctx){
   DEBUG_ENTER();
 }
+//   std::string     addrexpr = getAddrDecor(ctx->expr());
+//   instructionList code = getCodeDecor(ctx->expr());
+//   std::string temp = "%"+codeCounters.newTEMP();
+//   code = code || instruction::LOAD(temp, ctx->ID()->getText());
+//   putAddrDecor(ctx, temp);
+//   putOffsetDecor(ctx, addrexpr);
+//   putCodeDecor(ctx, code);
+//   DEBUG_EXIT();
 void CodeGenListener::exitArrayID(AslParser::ArrayIDContext *ctx){
+  
   std::string     addrexpr = getAddrDecor(ctx->expr());
   instructionList code = getCodeDecor(ctx->expr());
   putAddrDecor(ctx, ctx->ID()->getText());
@@ -712,7 +807,12 @@ void CodeGenListener::exitFuncID(AslParser::FuncIDContext *ctx){
   for(unsigned int i = 0; i < ctx->expr().size(); ++i){
     std::string addr = getAddrDecor(ctx->expr(i));
     TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(i));
-    if(Types.isFloatTy(paramtypes[i]) and Types.isIntegerTy(t1)){
+    if(Types.isArrayTy(t1)){
+      std::string reference = "%"+codeCounters.newTEMP();
+      code = code || instruction::ALOAD(reference,addr);
+      code = code || instruction::PUSH(reference);
+    }
+    else if(Types.isFloatTy(paramtypes[i]) and Types.isIntegerTy(t1)){
       std::string cast = "%"+codeCounters.newTEMP();
       code = code || instruction::FLOAT(cast, addr);
       code = code || instruction::PUSH(cast);
