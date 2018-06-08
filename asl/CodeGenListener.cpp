@@ -189,6 +189,10 @@ void CodeGenListener::exitAssignStmt(AslParser::AssignStmtContext *ctx) {
   std::string     offs2 = getOffsetDecor(ctx->expr());
   instructionList code2 = getCodeDecor(ctx->expr());
   // TypesMgr::TypeId tid2 = getTypeDecor(ctx->expr());
+  
+  subroutine       & subrRef = Code.get_last_subroutine();
+  bool mainFunc = subrRef.get_name() == "main";
+  
   code = code1 || code2;
   TypesMgr::TypeId t1 = Symbols.getType(addr1);
   TypesMgr::TypeId t2 = Symbols.getType(addr2);
@@ -196,19 +200,31 @@ void CodeGenListener::exitAssignStmt(AslParser::AssignStmtContext *ctx) {
     std::string temp = "%"+codeCounters.newTEMP();
     std::string ref1 = "%"+codeCounters.newTEMP();
     std::string ref2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref1, addr1);
-    code = code || instruction::LOAD(ref2, addr2);
+    if(not mainFunc){
+        code = code || instruction::LOAD(ref1, addr1);
+        code = code || instruction::LOAD(ref2, addr2);
+    }
+    else{
+        ref2 = addr2;
+        ref1 = addr1;
+    }
     code = code || instruction::LOADX(temp, ref2, offs2);
     code = code || instruction::XLOAD(ref1, offs1, temp);
   }
   else if(Types.isArrayTy(t1)){
     std::string ref1 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref1, addr1);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref1, addr1);
+    else
+        ref1 = addr1;
     code = code || instruction::XLOAD(ref1, offs1, addr2);
   }
   else if(Types.isArrayTy(t2)){
     std::string ref2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref2, addr2);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref2, addr2);
+    else
+        ref2 = addr2;
     code = code || instruction::LOADX(addr1, ref2, offs2);
   }
   else
@@ -327,6 +343,9 @@ void CodeGenListener::exitReadStmt(AslParser::ReadStmtContext *ctx) {
   instructionList code1 = getCodeDecor(ctx->left_expr());
   TypesMgr::TypeId tid1 = getTypeDecor(ctx->left_expr());
   TypesMgr::TypeId ty1 = Symbols.getType(addr1);
+  
+  subroutine       & subrRef = Code.get_last_subroutine();
+  bool mainFunc = subrRef.get_name() == "main";
   if(Types.isArrayTy(ty1)){
     std::string temp = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->left_expr());
@@ -340,7 +359,10 @@ void CodeGenListener::exitReadStmt(AslParser::ReadStmtContext *ctx) {
       code = code1 || code || instruction::READI(temp);
     }
     std::string ref1 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref1, addr1);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref1, addr1);
+    else
+        ref1 = addr1;
     code = code || instruction::XLOAD(ref1, offs1, temp);
   }
   else{
@@ -369,11 +391,17 @@ void CodeGenListener::exitWriteExpr(AslParser::WriteExprContext *ctx) {
   instructionList code1 = getCodeDecor(ctx->expr());
   TypesMgr::TypeId tid1 = getTypeDecor(ctx->expr());
   TypesMgr::TypeId ty1 = Symbols.getType(addr1);
+  
+  subroutine       & subrRef = Code.get_last_subroutine();
+  bool mainFunc = subrRef.get_name() == "main";
   if(Types.isArrayTy(ty1)){
     std::string temporal = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->expr());
     std::string ref1 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref1, addr1);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref1, addr1);
+    else
+        ref1 = addr1;
     code = code || instruction::LOADX(temporal, ref1, offs1);
     addr1 = temporal;
   }
@@ -452,12 +480,17 @@ void CodeGenListener::exitArithmetic(AslParser::ArithmeticContext *ctx) {
   TypesMgr::TypeId ty1 = Symbols.getType(temp1);
   TypesMgr::TypeId ty2 = Symbols.getType(temp2);
   
+  subroutine       & subrRef = Code.get_last_subroutine();
+  bool mainFunc = subrRef.get_name() == "main";
   
   if(Types.isArrayTy(ty1)){
     std::string temporal1 = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->expr(0));
     std::string ref1 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref1, temp1);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref1, temp1);
+    else
+        ref1 = temp1;
     code = code || instruction::LOADX(temporal1, ref1, offs1);
     temp1 = temporal1;
   }
@@ -465,7 +498,10 @@ void CodeGenListener::exitArithmetic(AslParser::ArithmeticContext *ctx) {
     std::string temporal2 = "%"+codeCounters.newTEMP();
     std::string offs2 = getOffsetDecor(ctx->expr(1));
     std::string ref2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref2, temp2);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref2, temp2);
+    else
+        ref2 = temp2;
     code = code || instruction::LOADX(temporal2, ref2, offs2);
     temp2 = temporal2;
   }
@@ -568,12 +604,17 @@ void CodeGenListener::exitRelational(AslParser::RelationalContext *ctx) {
   TypesMgr::TypeId ty1 = Symbols.getType(temp1);
   TypesMgr::TypeId ty2 = Symbols.getType(temp2);
   
+  subroutine       & subrRef = Code.get_last_subroutine();
+  bool mainFunc = subrRef.get_name() == "main";
   
   if(Types.isArrayTy(ty1)){
     std::string temporal1 = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->expr(0));
     std::string ref1 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref1, temp1);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref1, temp1);
+    else
+        ref1 = temp1;
     code = code || instruction::LOADX(temporal1, ref1, offs1);
     temp1 = temporal1;
   }
@@ -581,7 +622,10 @@ void CodeGenListener::exitRelational(AslParser::RelationalContext *ctx) {
     std::string temporal2 = "%"+codeCounters.newTEMP();
     std::string offs2 = getOffsetDecor(ctx->expr(1));
     std::string ref2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref2, temp2);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref2, temp2);
+    else
+        ref2 = temp2;
     code = code || instruction::LOADX(temporal2, ref2, offs2);
     temp2 = temporal2;
   }
@@ -668,18 +712,23 @@ void CodeGenListener::exitLogicalOp(AslParser::LogicalOpContext *ctx){
   std::string     temp2 = getAddrDecor(ctx->expr(1));
   instructionList code2 = getCodeDecor(ctx->expr(1));
   instructionList code  = code1 || code2;
-  TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(0));
-  TypesMgr::TypeId t2 = getTypeDecor(ctx->expr(1));
 
   TypesMgr::TypeId ty1 = Symbols.getType(temp1);
   TypesMgr::TypeId ty2 = Symbols.getType(temp2);
+  
+  
+  subroutine       & subrRef = Code.get_last_subroutine();
+  bool mainFunc = subrRef.get_name() == "main";
   
   
   if(Types.isArrayTy(ty1)){
     std::string temporal1 = "%"+codeCounters.newTEMP();
     std::string offs1 = getOffsetDecor(ctx->expr(0));
     std::string ref1 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref1, temp1);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref1, temp1);
+    else
+        ref1 = temp1;
     code = code || instruction::LOADX(temporal1, ref1, offs1);
     temp1 = temporal1;
   }
@@ -687,7 +736,10 @@ void CodeGenListener::exitLogicalOp(AslParser::LogicalOpContext *ctx){
     std::string temporal2 = "%"+codeCounters.newTEMP();
     std::string offs2 = getOffsetDecor(ctx->expr(1));
     std::string ref2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LOAD(ref2, temp2);
+    if(not mainFunc)
+        code = code || instruction::LOAD(ref2, temp2);
+    else
+        ref2 = temp2;
     code = code || instruction::LOADX(temporal2, ref2, offs2);
     temp2 = temporal2;
   }

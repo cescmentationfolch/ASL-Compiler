@@ -2,6 +2,7 @@ func f(a:int, b:float): bool
   var x:int
   var y:bool
   var z:array[10] of int
+  
   z[9] = (a + 67);
   x = 34;
   z[3] = 56 + z[9];

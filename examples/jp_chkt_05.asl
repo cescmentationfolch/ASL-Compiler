@@ -7,5 +7,4 @@ func f()
 endfunc
 
 func main()
- f = 2;
 endfunc
